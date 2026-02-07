@@ -9,7 +9,7 @@ from supabase_client import get_supabase_client
 
 
 APP_TITLE = "Costa Rica Trip"
-DEST_CITY = "Liberia, Costa Rica"
+DEST_CITY = "Tamarindo, Costa Rica"
 DEST_IATA = "LIR"
 EVENT_NAME = "Costa Rica Trip"
 EVENT_START_DATE = date(2026, 6, 11)
@@ -255,6 +255,11 @@ def get_gallery_images():
                 images.append(os.path.join(GALLERY_DIR, name))
     images.extend(GALLERY_URLS)
     return images
+
+
+def pick_images_by_keyword(images, keyword, limit=2):
+    matches = [img for img in images if keyword in os.path.basename(img).lower()]
+    return matches[:limit]
 
 
 def caption_from_filename(path):
@@ -689,6 +694,7 @@ def render_rsvp_gate(supabase, invite):
 
 def render_full_hub(supabase, invite):
     auto_refresh()
+    gallery_images = get_gallery_images()
     st.markdown(
         f"""
         <div class="hero">
@@ -698,6 +704,39 @@ def render_full_hub(supabase, invite):
         </div>
         """,
         unsafe_allow_html=True,
+    )
+
+    st.markdown("<h2 class='section-title'>The Place</h2>", unsafe_allow_html=True)
+    st.write(
+        "Casa Hamacas is inside the Hacienda Pinilla gated community, about 20 minutes from Tamarindo town. "
+        "It is a short walk to the golf course and a quick ride to the beach club and JW Marriott. "
+        "The villa is designed for large groups with an outdoor pool, hot tub, and a relaxed hangout space."
+    )
+    st.write(
+        "You will have access to the Hacienda Pinilla Beach Club, golf course, tennis and pickleball courts, "
+        "plus hiking and biking trails. The beach is about 0.5 miles away, and Tamarindo is a quick drive."
+    )
+    st.write("Concierge: Elsa will help arrange activities, dining, and services for the group.")
+
+    map_images = pick_images_by_keyword(gallery_images, "map", limit=2)
+    if map_images:
+        map_cols = st.columns(len(map_images))
+        for idx, image in enumerate(map_images):
+            map_cols[idx].image(image, use_container_width=True, caption=caption_from_filename(image))
+
+    st.markdown("**Before you arrive**")
+    st.write(
+        "- We will arrange airport transportation together.\n"
+        "- Golf carts are available around Hacienda Pinilla and the beach.\n"
+        "- We may get a car rental for exploring beyond the community.\n"
+        "- Grocery pre-stocking should be confirmed before we all arrive.\n"
+        "- We will have a private chef for most days, not all."
+    )
+
+    st.markdown("**Golf cart notes**")
+    st.write(
+        "Golf carts are only allowed inside Hacienda Pinilla. They cannot be taken into Tamarindo town. "
+        "Use them for the beach club, JW Marriott, golf and tennis courts, and nearby beaches within the community."
     )
 
     st.markdown("<h2 class='section-title'>Flights</h2>", unsafe_allow_html=True)
@@ -772,7 +811,6 @@ def render_full_hub(supabase, invite):
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<h2 class='section-title'>Gallery</h2>", unsafe_allow_html=True)
-    gallery_images = get_gallery_images()
     if gallery_images:
         cols = st.columns(4)
         for idx, image in enumerate(gallery_images):
