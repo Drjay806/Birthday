@@ -268,7 +268,7 @@ def flights_embed(home_city):
         <div class="card">
             <div class="pill">Kayak</div>
             <h3>Live results</h3>
-            <p>Open the live search to see real-time routes and prices.</p>
+            <p>Open the live search to see real-time routes and prices. Check other sites too — they may be cheaper.</p>
             <a href="{url}" target="_blank">View live flights</a>
         </div>
         """,
@@ -670,16 +670,12 @@ def main():
         blackout_screen("Thanks for letting us know. We will miss you!")
         return
 
-    if rsvp_done and rsvp_choice in {"yes", "maybe"}:
+    if rsvp_done and rsvp_choice == "yes":
         render_full_hub(supabase, invite)
         return
 
     if not invite.get("gate_name_done"):
         render_name_gate(supabase, invite)
-        return
-
-    if not invite.get("gate_video_done"):
-        render_video_gate(supabase, invite)
         return
 
     render_rsvp_gate(supabase, invite)
@@ -698,36 +694,11 @@ def render_name_gate(supabase, invite):
         st.rerun()
 
 
-def render_video_gate(supabase, invite):
-    st.header("Video Gate")
-    st.write("A quick message just for you.")
-    video_url = invite.get("video_url")
-    if video_url:
-        st.markdown("<div class='video-frame'>", unsafe_allow_html=True)
-        if video_url.startswith("http://") or video_url.startswith("https://"):
-            st.video(video_url, format="video/mp4", start_time=0)
-        else:
-            local_path = video_url
-            if not os.path.isabs(local_path):
-                local_path = os.path.join("assets", "videos", local_path)
-            if os.path.exists(local_path):
-                st.video(local_path, format="video/mp4", start_time=0)
-            else:
-                st.warning("Video file not found. Check the file path.")
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
-        st.info("Video coming soon.")
-    if st.button("I watched it"):
-        update_invite(supabase, invite["token"], {"gate_video_done": True})
-        log_event(supabase, invite["token"], "gate_video_done")
-        st.rerun()
-
-
 def render_rsvp_gate(supabase, invite):
     st.header("RSVP")
     st.write("Let us know if you can make it.")
     with st.form("rsvp_form"):
-        choice = st.radio("Your response", ["yes", "maybe", "no"], index=0)
+        choice = st.radio("Your response", ["yes", "no"], index=0)
         submitted = st.form_submit_button("Submit RSVP")
 
     if not submitted:
@@ -796,9 +767,6 @@ def render_full_hub(supabase, invite):
         "Golf carts are only allowed inside Hacienda Pinilla. They cannot be taken into Tamarindo town. "
         "Use them for the beach club, JW Marriott, golf and tennis courts, and nearby beaches within the community."
     )
-
-    st.markdown("<h2 class='section-title'>Flights</h2>", unsafe_allow_html=True)
-    st.write(f"{guest_name}, here are live flight options for your dates.")
     st.markdown("**Estimated average round-trip prices**")
     price_cols = st.columns(5)
     for idx, (label, price) in enumerate(AVG_PRICE_ORIGINS.items()):
@@ -887,19 +855,24 @@ def render_full_hub(supabase, invite):
     else:
         st.success("Survey completed. Thank you!")
 
+    if st.button("I watched it"):
+        update_invite(supabase, invite["token"], {"gate_video_done": True})
+        log_event(supabase, invite["token"], "gate_video_done")
     st.subheader("Your Video Message")
     video_url = invite.get("video_url")
     if video_url:
+        st.markdown("<div class='video-frame'>", unsafe_allow_html=True)
         if video_url.startswith("http://") or video_url.startswith("https://"):
-            st.video(video_url)
+            st.video(video_url, format="video/mp4", start_time=0)
         else:
             local_path = video_url
             if not os.path.isabs(local_path):
                 local_path = os.path.join("assets", "videos", local_path)
             if os.path.exists(local_path):
-                st.video(local_path)
+                st.video(local_path, format="video/mp4", start_time=0)
             else:
                 st.warning("Video file not found. Check the file path.")
+        st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("Video coming soon.")
 
@@ -917,7 +890,7 @@ def render_survey(supabase, invite):
         events_other = st.text_input("Other event preferences (optional)")
         arrival = st.selectbox(
             "Arrival window",
-            ["June 10", "June 11", "June 12", "June 13", "Not sure"],
+            ["June 11", "June 12", "June 13", "June 14", "June 15", "Not sure"],
         )
         budget = st.selectbox(
             "Preferred spend per event",
@@ -926,7 +899,7 @@ def render_survey(supabase, invite):
         passport_confirmed = st.checkbox("I have a valid passport")
         likelihood = st.slider("Likelihood you can attend", min_value=1, max_value=10, value=8)
         st.caption("We are trying to get maximum turnout.")
-        email = st.text_input("Email for trip updates")
+        email = st.text_area("Email for trip updates", height=70)
         notify_opt_in = st.checkbox("Yes, email me updates about events")
         notes = st.text_area("Recommendations for events or games")
         submitted = st.form_submit_button("Submit survey")
