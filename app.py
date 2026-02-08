@@ -710,20 +710,23 @@ def render_rsvp_gate(supabase, invite):
 def render_full_hub(supabase, invite):
     auto_refresh()
     gallery_images = get_gallery_images()
+    guest_name = invite.get("guest_name") or "Friend"
     st.markdown(
         f"""
         <div class="hero">
             <div class="hero-eyebrow">{EVENT_NAME}</div>
             <div class="hero-title">{DEST_CITY}</div>
-            <div class="hero-subtitle">June 11-17, 2026 · Sun, sand, and a long weekend together.</div>
+            <div class="hero-subtitle">Welcome, {guest_name}. June 11-17, 2026 · Sun, sand, and a long weekend together.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    st.write(f"{guest_name}, here is everything you need for the trip.")
+
     st.markdown("<h2 class='section-title'>The Place</h2>", unsafe_allow_html=True)
     st.write(
-        "Casa Hamacas is inside the Hacienda Pinilla gated community, about 20 minutes from Tamarindo town. "
+        f"{guest_name}, Casa Hamacas is inside the Hacienda Pinilla gated community, about 20 minutes from Tamarindo town. "
         "It is a short walk to the golf course and a quick ride to the beach club and JW Marriott. "
         "The villa is designed for large groups with an outdoor pool, hot tub, and a relaxed hangout space."
     )
@@ -755,7 +758,7 @@ def render_full_hub(supabase, invite):
     )
 
     st.markdown("<h2 class='section-title'>Flights</h2>", unsafe_allow_html=True)
-    st.write("Live results from Skyscanner for your dates.")
+    st.write(f"{guest_name}, here are live flight options for your dates.")
     st.markdown("**Estimated average round-trip prices**")
     price_cols = st.columns(5)
     for idx, (label, price) in enumerate(AVG_PRICE_ORIGINS.items()):
@@ -782,15 +785,17 @@ def render_full_hub(supabase, invite):
 
     st.markdown("<h2 class='section-title'>Passport & Timing</h2>", unsafe_allow_html=True)
     if invite.get("needs_passport"):
-        st.write("Make sure your passport is valid and in hand before the trip.")
+        st.write(f"{guest_name}, please make sure your passport is valid and in hand before the trip.")
     else:
-        st.write("If you need a passport, here is the timeline and steps.")
+        st.write(f"{guest_name}, if you need a passport, here is the timeline and steps.")
     passport_timeline()
 
     st.markdown("<h2 class='section-title'>Weather</h2>", unsafe_allow_html=True)
+    st.write(f"{guest_name}, pack for warm, humid weather with occasional showers.")
     weather_section()
 
     st.markdown("<h2 class='section-title'>Add to Calendar</h2>", unsafe_allow_html=True)
+    st.write(f"{guest_name}, download the calendar invite so you have the dates saved.")
     events = load_events(supabase)
     ics = ics_payload(events)
     st.download_button(
@@ -802,6 +807,7 @@ def render_full_hub(supabase, invite):
 
     if events:
         st.markdown("<h2 class='section-title'>Itinerary & What to Bring</h2>", unsafe_allow_html=True)
+        st.write(f"{guest_name}, here is the current schedule and what to bring.")
         st.markdown("<div class='card-grid'>", unsafe_allow_html=True)
         for event in events:
             items = parse_items(event.get("bring_items"))
@@ -826,6 +832,7 @@ def render_full_hub(supabase, invite):
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<h2 class='section-title'>Gallery</h2>", unsafe_allow_html=True)
+    st.write(f"{guest_name}, a few photos to set the vibe.")
     if gallery_images:
         cols = st.columns(4)
         for idx, image in enumerate(gallery_images):
@@ -834,7 +841,8 @@ def render_full_hub(supabase, invite):
         st.write("Costa Rica vibes and villa photos coming soon.")
 
     if not invite.get("survey_done"):
-        st.subheader("Quick Survey")
+        st.subheader(f"Quick Survey for {guest_name}")
+        st.write("Share your preferences so we can plan the best experience.")
         render_survey(supabase, invite)
     else:
         st.success("Survey completed. Thank you!")
