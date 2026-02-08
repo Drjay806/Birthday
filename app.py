@@ -116,7 +116,7 @@ def apply_modern_theme():
             margin-top: 24px;
         }
         .video-frame {
-            max-width: 720px;
+            max-width: 520px;
             margin: 0 auto 12px auto;
         }
         .video-frame video {
