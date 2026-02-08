@@ -476,6 +476,12 @@ def admin_dashboard(supabase):
 
     st.subheader("Survey Responses")
     if not survey_df.empty:
+        if "passport_confirmed" in survey_df.columns:
+            confirmed = int(survey_df["passport_confirmed"].fillna(False).sum())
+            not_confirmed = int((~survey_df["passport_confirmed"].fillna(False)).sum())
+            st.subheader("Passport Checklist")
+            st.write(f"Confirmed: {confirmed}")
+            st.write(f"Not confirmed: {not_confirmed}")
         st.dataframe(survey_df, use_container_width=True)
         csv_survey = survey_df.to_csv(index=False).encode("utf-8")
         st.download_button("Download survey CSV", csv_survey, "survey.csv", "text/csv")
@@ -659,7 +665,16 @@ def render_video_gate(supabase, invite):
     st.write("A quick message just for you.")
     video_url = invite.get("video_url")
     if video_url:
-        st.video(video_url)
+        if video_url.startswith("http://") or video_url.startswith("https://"):
+            st.video(video_url)
+        else:
+            local_path = video_url
+            if not os.path.isabs(local_path):
+                local_path = os.path.join("assets", "videos", local_path)
+            if os.path.exists(local_path):
+                st.video(local_path)
+            else:
+                st.warning("Video file not found. Check the file path.")
     else:
         st.info("Video coming soon.")
     if st.button("I watched it"):
@@ -840,11 +855,11 @@ def render_survey(supabase, invite):
             "Arrival window",
             ["June 10", "June 11", "June 12", "June 13", "Not sure"],
         )
-        plus_one = st.selectbox("Plus-one", ["No", "Yes", "Maybe"])
         budget = st.selectbox(
             "Preferred spend per event",
             ["Under $50", "$50-$100", "$100-$200", "$200+"],
         )
+        passport_confirmed = st.checkbox("I have a valid passport")
         email = st.text_input("Email for trip updates")
         notify_opt_in = st.checkbox("Yes, email me updates about events")
         notes = st.text_area("Recommendations for events or games")
@@ -863,8 +878,8 @@ def render_survey(supabase, invite):
             "liquor_preferences": ", ".join(liquor),
             "event_preferences": ", ".join(event_list),
             "arrival_window": arrival,
-            "plus_one": plus_one,
             "budget_preference": budget,
+            "passport_confirmed": passport_confirmed,
             "email": email.strip(),
             "notify_opt_in": notify_opt_in,
             "notes": notes,

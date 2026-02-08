@@ -26,6 +26,7 @@ create table if not exists public.survey_responses (
   budget_preference text,
   email text,
   notify_opt_in boolean default false,
+  passport_confirmed boolean default false,
   notes text,
   created_at timestamp with time zone default now()
 );

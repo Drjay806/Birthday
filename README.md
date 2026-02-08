@@ -41,6 +41,7 @@ alter table public.invites add column if not exists flight_origin text;
 alter table public.survey_responses add column if not exists budget_preference text;
 alter table public.survey_responses add column if not exists email text;
 alter table public.survey_responses add column if not exists notify_opt_in boolean default false;
+alter table public.survey_responses add column if not exists passport_confirmed boolean default false;
 
 create table if not exists public.trip_events (
   id uuid primary key default gen_random_uuid(),
