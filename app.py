@@ -115,6 +115,13 @@ def apply_modern_theme():
         .section-title {
             margin-top: 24px;
         }
+        .video-frame {
+            max-width: 720px;
+            margin: 0 auto 12px auto;
+        }
+        .video-frame video {
+            border-radius: 16px;
+        }
         img {
             border-radius: 16px;
         }
@@ -665,18 +672,18 @@ def render_video_gate(supabase, invite):
     st.write("A quick message just for you.")
     video_url = invite.get("video_url")
     if video_url:
-        display_cols = st.columns([2, 3, 2])
-        with display_cols[1]:
-            if video_url.startswith("http://") or video_url.startswith("https://"):
-                st.video(video_url, format="video/mp4", start_time=0)
+        st.markdown("<div class='video-frame'>", unsafe_allow_html=True)
+        if video_url.startswith("http://") or video_url.startswith("https://"):
+            st.video(video_url, format="video/mp4", start_time=0)
+        else:
+            local_path = video_url
+            if not os.path.isabs(local_path):
+                local_path = os.path.join("assets", "videos", local_path)
+            if os.path.exists(local_path):
+                st.video(local_path, format="video/mp4", start_time=0)
             else:
-                local_path = video_url
-                if not os.path.isabs(local_path):
-                    local_path = os.path.join("assets", "videos", local_path)
-                if os.path.exists(local_path):
-                    st.video(local_path, format="video/mp4", start_time=0)
-                else:
-                    st.warning("Video file not found. Check the file path.")
+                st.warning("Video file not found. Check the file path.")
+        st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("Video coming soon.")
     if st.button("I watched it"):
