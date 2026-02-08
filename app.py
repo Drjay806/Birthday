@@ -512,6 +512,26 @@ def admin_dashboard(supabase):
             st.subheader("Passport Checklist")
             st.write(f"Confirmed: {confirmed}")
             st.write(f"Not confirmed: {not_confirmed}")
+        st.subheader("Survey Charts")
+        if "liquor_preferences" in survey_df.columns:
+            liquor_counts = survey_df["liquor_preferences"].fillna("").str.split(", ").explode()
+            liquor_counts = liquor_counts[liquor_counts != ""].value_counts()
+            if not liquor_counts.empty:
+                st.bar_chart(liquor_counts)
+        if "event_preferences" in survey_df.columns:
+            event_counts = survey_df["event_preferences"].fillna("").str.split(", ").explode()
+            event_counts = event_counts[event_counts != ""].value_counts()
+            if not event_counts.empty:
+                st.bar_chart(event_counts)
+        if "arrival_window" in survey_df.columns:
+            arrival_counts = survey_df["arrival_window"].value_counts(dropna=False)
+            st.bar_chart(arrival_counts)
+        if "budget_preference" in survey_df.columns:
+            budget_counts = survey_df["budget_preference"].value_counts(dropna=False)
+            st.bar_chart(budget_counts)
+        if "attendance_likelihood" in survey_df.columns:
+            likelihood_counts = survey_df["attendance_likelihood"].value_counts(dropna=False).sort_index()
+            st.line_chart(likelihood_counts)
         st.dataframe(survey_df, use_container_width=True)
         csv_survey = survey_df.to_csv(index=False).encode("utf-8")
         st.download_button("Download survey CSV", csv_survey, "survey.csv", "text/csv")
