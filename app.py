@@ -728,6 +728,23 @@ def render_name_gate(supabase, invite):
 
 def render_rsvp_gate(supabase, invite):
     st.header("RSVP")
+    st.subheader("Your Video Message")
+    video_url = invite.get("video_url")
+    if video_url:
+        st.markdown("<div class='video-frame'>", unsafe_allow_html=True)
+        if video_url.startswith("http://") or video_url.startswith("https://"):
+            st.video(video_url, format="video/mp4", start_time=0)
+        else:
+            local_path = video_url
+            if not os.path.isabs(local_path):
+                local_path = os.path.join("assets", "videos", local_path)
+            if os.path.exists(local_path):
+                st.video(local_path, format="video/mp4", start_time=0)
+            else:
+                st.warning("Video file not found. Check the file path.")
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("Video coming soon.")
     st.write("Let us know if you can make it.")
     with st.form("rsvp_form"):
         choice = st.radio("Your response", ["yes", "no"], index=0)
