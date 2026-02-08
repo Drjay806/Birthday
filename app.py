@@ -745,6 +745,14 @@ def render_rsvp_gate(supabase, invite):
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("Video coming soon.")
+        return
+    if not invite.get("gate_video_done"):
+        if st.button("I watched it"):
+            update_invite(supabase, invite["token"], {"gate_video_done": True})
+            log_event(supabase, invite["token"], "gate_video_done")
+            st.rerun()
+        st.info("Please confirm you watched the video to continue.")
+        return
     st.write("Let us know if you can make it.")
     with st.form("rsvp_form"):
         choice = st.radio("Your response", ["yes", "no"], index=0)
@@ -904,9 +912,6 @@ def render_full_hub(supabase, invite):
     else:
         st.success("Survey completed. Thank you!")
 
-    if st.button("I watched it"):
-        update_invite(supabase, invite["token"], {"gate_video_done": True})
-        log_event(supabase, invite["token"], "gate_video_done")
     st.subheader("Your Video Message")
     video_url = invite.get("video_url")
     if video_url:
