@@ -665,7 +665,7 @@ def main():
     if not token:
         st.info("Enter your invite code to continue.")
         input_token = st.text_input("Invite code", help="Codes are 3-32 characters: letters, numbers, dash, underscore.")
-        if input_token:
+        if st.button("Enter"):
             cleaned = normalize_token(input_token)
             if not is_valid_token(cleaned):
                 st.error("That code format looks wrong. Please check your invite code.")
@@ -919,7 +919,7 @@ def render_survey(supabase, invite):
         passport_confirmed = st.checkbox("I have a valid passport")
         likelihood = st.slider("Likelihood you can attend", min_value=1, max_value=10, value=8)
         st.caption("We are trying to get maximum turnout.")
-        email = st.text_area("Email for trip updates", height=70)
+        email = st.text_input("Email for trip updates")
         notify_opt_in = st.checkbox("Yes, email me updates about events")
         notes = st.text_area("Recommendations for events or games")
         submitted = st.form_submit_button("Submit survey")
