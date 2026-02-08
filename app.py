@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime, date, time, timedelta
 import pandas as pd
 import streamlit as st
@@ -150,6 +151,14 @@ def get_token_from_query():
     return token
 
 
+def normalize_token(token):
+    return (token or "").strip()
+
+
+def is_valid_token(token):
+    return bool(re.fullmatch(r"[A-Za-z0-9_-]{3,32}", token or ""))
+
+
 def set_token_in_query(token):
     st.query_params["t"] = token
 
@@ -165,9 +174,12 @@ def is_admin_request():
 
 
 def load_invite(supabase, token):
-    res = supabase.table("invites").select("*").eq("token", token).single().execute()
+    try:
+        res = supabase.table("invites").select("*").eq("token", token).limit(1).execute()
+    except Exception:
+        return None
     if res.data:
-        return res.data
+        return res.data[0]
     return None
 
 
@@ -629,18 +641,26 @@ def main():
         admin_events_manager(supabase)
         return
 
-    token = get_token_from_query()
+    token = normalize_token(get_token_from_query())
     if not token:
         st.info("Enter your invite code to continue.")
-        input_token = st.text_input("Invite code")
+        input_token = st.text_input("Invite code", help="Codes are 3-32 characters: letters, numbers, dash, underscore.")
         if input_token:
-            set_token_in_query(input_token.strip())
+            cleaned = normalize_token(input_token)
+            if not is_valid_token(cleaned):
+                st.error("That code format looks wrong. Please check your invite code.")
+                return
+            set_token_in_query(cleaned)
             st.rerun()
+        return
+
+    if not is_valid_token(token):
+        st.error("That code format looks wrong. Please check your invite code.")
         return
 
     invite = load_invite(supabase, token)
     if not invite:
-        st.error("Invalid invite code. Please check your link.")
+        st.error("Invite code not found. Please check your link or message the host.")
         return
 
     rsvp_done = invite.get("rsvp_done")
@@ -918,23 +938,27 @@ def render_survey(supabase, invite):
     if events_other.strip():
         event_list.append(events_other.strip())
 
-    supabase.table("survey_responses").insert(
-        {
-            "token": invite["token"],
-            "liquor_preferences": ", ".join(liquor),
-            "event_preferences": ", ".join(event_list),
-            "arrival_window": arrival,
-            "budget_preference": budget,
-            "passport_confirmed": passport_confirmed,
-            "attendance_likelihood": likelihood,
-            "email": email.strip(),
-            "notify_opt_in": notify_opt_in,
-            "notes": notes,
-        }
-    ).execute()
-    update_invite(supabase, invite["token"], {"survey_done": True})
-    log_event(supabase, invite["token"], "survey_done")
-    st.rerun()
+    try:
+        supabase.table("survey_responses").insert(
+            {
+                "token": invite["token"],
+                "liquor_preferences": ", ".join(liquor),
+                "event_preferences": ", ".join(event_list),
+                "arrival_window": arrival,
+                "budget_preference": budget,
+                "passport_confirmed": passport_confirmed,
+                "attendance_likelihood": likelihood,
+                "email": email.strip(),
+                "notify_opt_in": notify_opt_in,
+                "notes": notes,
+            }
+        ).execute()
+        update_invite(supabase, invite["token"], {"survey_done": True})
+        log_event(supabase, invite["token"], "survey_done")
+        st.rerun()
+    except Exception:
+        st.error("We could not save your survey. Please try again in a moment.")
+        return
 
 
 if __name__ == "__main__":
