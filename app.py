@@ -670,6 +670,9 @@ def main():
             if not is_valid_token(cleaned):
                 st.error("That code format looks wrong. Please check your invite code.")
                 return
+            if not load_invite(supabase, cleaned):
+                st.error("Invite code not found. Please enter a valid code.")
+                return
             set_token_in_query(cleaned)
             st.rerun()
         return
@@ -680,7 +683,16 @@ def main():
 
     invite = load_invite(supabase, token)
     if not invite:
-        st.error("Invite code not found. Please check your link or message the host.")
+        st.error("Invite code not found. Please enter a valid code.")
+        st.info("Enter your invite code to continue.")
+        input_token = st.text_input("Invite code", help="Codes are 3-32 characters: letters, numbers, dash, underscore.")
+        if st.button("Enter"):
+            cleaned = normalize_token(input_token)
+            if not is_valid_token(cleaned):
+                st.error("That code format looks wrong. Please check your invite code.")
+                return
+            set_token_in_query(cleaned)
+            st.rerun()
         return
 
     rsvp_done = invite.get("rsvp_done")
