@@ -728,6 +728,7 @@ def render_name_gate(supabase, invite):
 
 def render_rsvp_gate(supabase, invite):
     st.header("RSVP")
+    st.write("Trip dates: June 11-17, 2026")
     st.subheader("Your Video Message")
     video_url = invite.get("video_url")
     if video_url:
