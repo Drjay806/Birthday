@@ -847,6 +847,22 @@ def render_full_hub(supabase, invite):
     else:
         st.success("Survey completed. Thank you!")
 
+    st.subheader("Your Video Message")
+    video_url = invite.get("video_url")
+    if video_url:
+        if video_url.startswith("http://") or video_url.startswith("https://"):
+            st.video(video_url)
+        else:
+            local_path = video_url
+            if not os.path.isabs(local_path):
+                local_path = os.path.join("assets", "videos", local_path)
+            if os.path.exists(local_path):
+                st.video(local_path)
+            else:
+                st.warning("Video file not found. Check the file path.")
+    else:
+        st.info("Video coming soon.")
+
 
 def render_survey(supabase, invite):
     with st.form("survey_form"):
