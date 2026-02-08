@@ -122,6 +122,17 @@ def apply_modern_theme():
         .video-frame video {
             border-radius: 16px;
         }
+        .stVideo {
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .stVideo iframe,
+        .stVideo video {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 16px;
+        }
         img {
             border-radius: 16px;
         }
@@ -893,6 +904,8 @@ def render_survey(supabase, invite):
             ["Under $50", "$50-$100", "$100-$200", "$200+"],
         )
         passport_confirmed = st.checkbox("I have a valid passport")
+        likelihood = st.slider("Likelihood you can attend", min_value=1, max_value=10, value=8)
+        st.caption("We are trying to get maximum turnout.")
         email = st.text_input("Email for trip updates")
         notify_opt_in = st.checkbox("Yes, email me updates about events")
         notes = st.text_area("Recommendations for events or games")
@@ -913,6 +926,7 @@ def render_survey(supabase, invite):
             "arrival_window": arrival,
             "budget_preference": budget,
             "passport_confirmed": passport_confirmed,
+            "attendance_likelihood": likelihood,
             "email": email.strip(),
             "notify_opt_in": notify_opt_in,
             "notes": notes,
