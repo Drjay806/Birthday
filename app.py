@@ -898,6 +898,10 @@ def render_full_hub(supabase, invite):
 
 
 def render_survey(supabase, invite):
+    st.write("Email updates")
+    email = st.text_input("Email for trip updates", key="survey_email")
+    notify_opt_in = st.checkbox("Yes, email me updates about events", key="survey_notify")
+
     with st.form("survey_form"):
         liquor = st.multiselect(
             "Liquor preferences",
@@ -919,8 +923,6 @@ def render_survey(supabase, invite):
         passport_confirmed = st.checkbox("I have a valid passport")
         likelihood = st.slider("Likelihood you can attend", min_value=1, max_value=10, value=8)
         st.caption("We are trying to get maximum turnout.")
-        email = st.text_input("Email for trip updates")
-        notify_opt_in = st.checkbox("Yes, email me updates about events")
         notes = st.text_area("Recommendations for events or games")
         submitted = st.form_submit_button("Submit survey")
 
