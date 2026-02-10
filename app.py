@@ -546,11 +546,12 @@ def admin_dashboard(supabase):
 
     st.subheader("RSVP Overview")
     if not invites_df.empty:
-        rsvp_counts = invites_df["rsvp_choice"].value_counts(dropna=False)
+        rsvp_counts = invites_df["rsvp_choice"].fillna("pending").value_counts().reset_index()
+        rsvp_counts.columns = ["rsvp_choice", "count"]
         rsvp_chart = (
-            alt.Chart(rsvp_counts.reset_index())
+            alt.Chart(rsvp_counts)
             .mark_bar()
-            .encode(x=alt.X("index:N", title="RSVP"), y=alt.Y("rsvp_choice:Q", title="Count"))
+            .encode(x=alt.X("rsvp_choice:N", title="RSVP"), y=alt.Y("count:Q", title="Count"))
         )
         st.altair_chart(rsvp_chart, use_container_width=True)
         st.dataframe(invites_df, use_container_width=True)
@@ -570,46 +571,55 @@ def admin_dashboard(supabase):
         st.subheader("Survey Charts")
         if "liquor_preferences" in survey_df.columns:
             liquor_counts = survey_df["liquor_preferences"].fillna("").str.split(", ").explode()
-            liquor_counts = liquor_counts[liquor_counts != ""].value_counts()
+            liquor_counts = liquor_counts[liquor_counts != ""].value_counts().reset_index()
+            liquor_counts.columns = ["liquor", "count"]
             if not liquor_counts.empty:
                 liquor_chart = (
-                    alt.Chart(liquor_counts.reset_index())
+                    alt.Chart(liquor_counts)
                     .mark_bar()
-                    .encode(x=alt.X("index:N", title="Liquor"), y=alt.Y("liquor_preferences:Q", title="Count"))
+                    .encode(x=alt.X("liquor:N", title="Liquor"), y=alt.Y("count:Q", title="Count"))
                 )
                 st.altair_chart(liquor_chart, use_container_width=True)
+            else:
+                st.info("No liquor preferences yet.")
         if "event_preferences" in survey_df.columns:
             event_counts = survey_df["event_preferences"].fillna("").str.split(", ").explode()
-            event_counts = event_counts[event_counts != ""].value_counts()
+            event_counts = event_counts[event_counts != ""].value_counts().reset_index()
+            event_counts.columns = ["event", "count"]
             if not event_counts.empty:
                 event_chart = (
-                    alt.Chart(event_counts.reset_index())
+                    alt.Chart(event_counts)
                     .mark_bar()
-                    .encode(x=alt.X("index:N", title="Event"), y=alt.Y("event_preferences:Q", title="Count"))
+                    .encode(x=alt.X("event:N", title="Event"), y=alt.Y("count:Q", title="Count"))
                 )
                 st.altair_chart(event_chart, use_container_width=True)
+            else:
+                st.info("No event preferences yet.")
         if "arrival_window" in survey_df.columns:
-            arrival_counts = survey_df["arrival_window"].value_counts(dropna=False)
+            arrival_counts = survey_df["arrival_window"].fillna("Unknown").value_counts().reset_index()
+            arrival_counts.columns = ["arrival_window", "count"]
             arrival_chart = (
-                alt.Chart(arrival_counts.reset_index())
+                alt.Chart(arrival_counts)
                 .mark_bar()
-                .encode(x=alt.X("index:N", title="Arrival window"), y=alt.Y("arrival_window:Q", title="Count"))
+                .encode(x=alt.X("arrival_window:N", title="Arrival window"), y=alt.Y("count:Q", title="Count"))
             )
             st.altair_chart(arrival_chart, use_container_width=True)
         if "budget_preference" in survey_df.columns:
-            budget_counts = survey_df["budget_preference"].value_counts(dropna=False)
+            budget_counts = survey_df["budget_preference"].fillna("Unknown").value_counts().reset_index()
+            budget_counts.columns = ["budget", "count"]
             budget_chart = (
-                alt.Chart(budget_counts.reset_index())
+                alt.Chart(budget_counts)
                 .mark_arc()
-                .encode(theta=alt.Theta("budget_preference:Q", title="Count"), color=alt.Color("index:N", title="Budget"))
+                .encode(theta=alt.Theta("count:Q", title="Count"), color=alt.Color("budget:N", title="Budget"))
             )
             st.altair_chart(budget_chart, use_container_width=True)
         if "attendance_likelihood" in survey_df.columns:
-            likelihood_counts = survey_df["attendance_likelihood"].value_counts(dropna=False).sort_index()
+            likelihood_counts = survey_df["attendance_likelihood"].fillna(0).value_counts().sort_index().reset_index()
+            likelihood_counts.columns = ["likelihood", "count"]
             likelihood_chart = (
-                alt.Chart(likelihood_counts.reset_index())
+                alt.Chart(likelihood_counts)
                 .mark_line(point=True)
-                .encode(x=alt.X("index:Q", title="Likelihood"), y=alt.Y("attendance_likelihood:Q", title="Count"))
+                .encode(x=alt.X("likelihood:Q", title="Likelihood"), y=alt.Y("count:Q", title="Count"))
             )
             st.altair_chart(likelihood_chart, use_container_width=True)
         st.dataframe(survey_df, use_container_width=True)
