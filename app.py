@@ -400,6 +400,32 @@ def load_events(supabase):
     return res.data or []
 
 
+def load_latest_survey(supabase, token):
+    res = (
+        supabase.table("survey_responses")
+        .select("*")
+        .eq("token", token)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if res.data:
+        return res.data[0]
+    return None
+
+
+def upsert_passport_confirmation(supabase, token, confirmed):
+    existing = load_latest_survey(supabase, token)
+    if existing and existing.get("id"):
+        supabase.table("survey_responses").update(
+            {"passport_confirmed": confirmed}
+        ).eq("id", existing["id"]).execute()
+        return
+    supabase.table("survey_responses").insert(
+        {"token": token, "passport_confirmed": confirmed}
+    ).execute()
+
+
 def format_event_line(event):
     event_date = event.get("event_date")
     event_time = event.get("event_time")
@@ -732,23 +758,36 @@ def render_rsvp_gate(supabase, invite):
     st.subheader("Your Video Message")
     video_url = invite.get("video_url")
     if video_url:
+        is_image = os.path.splitext(video_url)[1].lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
         st.markdown("<div class='video-frame'>", unsafe_allow_html=True)
         if video_url.startswith("http://") or video_url.startswith("https://"):
-            st.video(video_url, format="video/mp4", start_time=0)
+            if is_image:
+                st.image(video_url, use_container_width=True)
+            else:
+                st.video(video_url, format="video/mp4", start_time=0)
         else:
             local_path = video_url
             if not os.path.isabs(local_path):
-                local_path = os.path.join("assets", "videos", local_path)
+                if is_image:
+                    gallery_path = os.path.join("assets", "gallery", local_path)
+                    video_path = os.path.join("assets", "videos", local_path)
+                    local_path = gallery_path if os.path.exists(gallery_path) else video_path
+                else:
+                    local_path = os.path.join("assets", "videos", local_path)
             if os.path.exists(local_path):
-                st.video(local_path, format="video/mp4", start_time=0)
+                if is_image:
+                    st.image(local_path, use_container_width=True)
+                else:
+                    st.video(local_path, format="video/mp4", start_time=0)
             else:
-                st.warning("Video file not found. Check the file path.")
+                st.warning("Media file not found. Check the file path.")
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("Video coming soon.")
         return
     if not invite.get("gate_video_done"):
-        if st.button("I watched it"):
+        gate_button_label = "Next" if is_image else "I watched it"
+        if st.button(gate_button_label):
             update_invite(supabase, invite["token"], {"gate_video_done": True})
             log_event(supabase, invite["token"], "gate_video_done")
             st.rerun()
@@ -855,6 +894,18 @@ def render_full_hub(supabase, invite):
     else:
         st.write(f"{guest_name}, if you need a passport, here is the timeline and steps.")
     passport_timeline()
+    latest_survey = load_latest_survey(supabase, invite["token"])
+    existing_passport = bool(latest_survey.get("passport_confirmed")) if latest_survey else False
+    passport_key = f"passport_confirmed_{invite['token']}"
+    passport_confirmed = st.checkbox(
+        "I have a valid passport",
+        value=existing_passport,
+        key=passport_key,
+    )
+    if passport_confirmed != existing_passport:
+        upsert_passport_confirmation(supabase, invite["token"], passport_confirmed)
+        log_event(supabase, invite["token"], "passport_confirmed_update", str(passport_confirmed))
+        st.success("Passport status saved.")
 
     st.markdown("<h2 class='section-title'>Weather</h2>", unsafe_allow_html=True)
     st.write(f"{guest_name}, pack for warm, humid weather with occasional showers.")
