@@ -755,10 +755,11 @@ def render_name_gate(supabase, invite):
 def render_rsvp_gate(supabase, invite):
     st.header("RSVP")
     st.write("Trip dates: June 11-17, 2026")
-    st.subheader("Your Video Message")
     video_url = invite.get("video_url")
     if video_url:
         is_image = os.path.splitext(video_url)[1].lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+        media_label = "Your Photo Message" if is_image else "Your Video Message"
+        st.subheader(media_label)
         st.markdown("<div class='video-frame'>", unsafe_allow_html=True)
         if video_url.startswith("http://") or video_url.startswith("https://"):
             if is_image:
@@ -964,20 +965,33 @@ def render_full_hub(supabase, invite):
     else:
         st.success("Survey completed. Thank you!")
 
-    st.subheader("Your Video Message")
     video_url = invite.get("video_url")
     if video_url:
+        is_image = os.path.splitext(video_url)[1].lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+        media_label = "Your Photo Message" if is_image else "Your Video Message"
+        st.subheader(media_label)
         st.markdown("<div class='video-frame'>", unsafe_allow_html=True)
         if video_url.startswith("http://") or video_url.startswith("https://"):
-            st.video(video_url, format="video/mp4", start_time=0)
+            if is_image:
+                st.image(video_url, use_container_width=True)
+            else:
+                st.video(video_url, format="video/mp4", start_time=0)
         else:
             local_path = video_url
             if not os.path.isabs(local_path):
-                local_path = os.path.join("assets", "videos", local_path)
+                if is_image:
+                    gallery_path = os.path.join("assets", "gallery", local_path)
+                    video_path = os.path.join("assets", "videos", local_path)
+                    local_path = gallery_path if os.path.exists(gallery_path) else video_path
+                else:
+                    local_path = os.path.join("assets", "videos", local_path)
             if os.path.exists(local_path):
-                st.video(local_path, format="video/mp4", start_time=0)
+                if is_image:
+                    st.image(local_path, use_container_width=True)
+                else:
+                    st.video(local_path, format="video/mp4", start_time=0)
             else:
-                st.warning("Video file not found. Check the file path.")
+                st.warning("Media file not found. Check the file path.")
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("Video coming soon.")
