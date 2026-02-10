@@ -2,6 +2,7 @@ import os
 import re
 from datetime import datetime, date, time, timedelta
 import pandas as pd
+import altair as alt
 import streamlit as st
 import streamlit.components.v1 as components
 import requests
@@ -520,10 +521,38 @@ def admin_dashboard(supabase):
     invites_df = pd.DataFrame(invites)
     survey_df = pd.DataFrame(survey)
 
+    st.subheader("Quick Stats")
+    total_invites = len(invites_df)
+    total_surveys = len(survey_df)
+    rsvp_yes = int((invites_df.get("rsvp_choice") == "yes").sum()) if not invites_df.empty else 0
+    rsvp_no = int((invites_df.get("rsvp_choice") == "no").sum()) if not invites_df.empty else 0
+    rsvp_pending = max(total_invites - rsvp_yes - rsvp_no, 0)
+    opted_in = int((survey_df.get("notify_opt_in") == True).sum()) if not survey_df.empty else 0
+
+    stat_cols = st.columns(4)
+    stat_cols[0].metric("Invites", total_invites)
+    stat_cols[1].metric("RSVP Yes", rsvp_yes)
+    stat_cols[2].metric("RSVP No", rsvp_no)
+    stat_cols[3].metric("Surveys", total_surveys)
+
+    stat_cols = st.columns(3)
+    stat_cols[0].metric("Pending RSVPs", rsvp_pending)
+    stat_cols[1].metric("Email opt-ins", opted_in)
+    if not survey_df.empty and "passport_confirmed" in survey_df.columns:
+        passport_confirmed = int(survey_df["passport_confirmed"].fillna(False).sum())
+        stat_cols[2].metric("Passports confirmed", passport_confirmed)
+    else:
+        stat_cols[2].metric("Passports confirmed", 0)
+
     st.subheader("RSVP Overview")
     if not invites_df.empty:
         rsvp_counts = invites_df["rsvp_choice"].value_counts(dropna=False)
-        st.bar_chart(rsvp_counts)
+        rsvp_chart = (
+            alt.Chart(rsvp_counts.reset_index())
+            .mark_bar()
+            .encode(x=alt.X("index:N", title="RSVP"), y=alt.Y("rsvp_choice:Q", title="Count"))
+        )
+        st.altair_chart(rsvp_chart, use_container_width=True)
         st.dataframe(invites_df, use_container_width=True)
         csv_invites = invites_df.to_csv(index=False).encode("utf-8")
         st.download_button("Download invites CSV", csv_invites, "invites.csv", "text/csv")
@@ -543,21 +572,46 @@ def admin_dashboard(supabase):
             liquor_counts = survey_df["liquor_preferences"].fillna("").str.split(", ").explode()
             liquor_counts = liquor_counts[liquor_counts != ""].value_counts()
             if not liquor_counts.empty:
-                st.bar_chart(liquor_counts)
+                liquor_chart = (
+                    alt.Chart(liquor_counts.reset_index())
+                    .mark_bar()
+                    .encode(x=alt.X("index:N", title="Liquor"), y=alt.Y("liquor_preferences:Q", title="Count"))
+                )
+                st.altair_chart(liquor_chart, use_container_width=True)
         if "event_preferences" in survey_df.columns:
             event_counts = survey_df["event_preferences"].fillna("").str.split(", ").explode()
             event_counts = event_counts[event_counts != ""].value_counts()
             if not event_counts.empty:
-                st.bar_chart(event_counts)
+                event_chart = (
+                    alt.Chart(event_counts.reset_index())
+                    .mark_bar()
+                    .encode(x=alt.X("index:N", title="Event"), y=alt.Y("event_preferences:Q", title="Count"))
+                )
+                st.altair_chart(event_chart, use_container_width=True)
         if "arrival_window" in survey_df.columns:
             arrival_counts = survey_df["arrival_window"].value_counts(dropna=False)
-            st.bar_chart(arrival_counts)
+            arrival_chart = (
+                alt.Chart(arrival_counts.reset_index())
+                .mark_bar()
+                .encode(x=alt.X("index:N", title="Arrival window"), y=alt.Y("arrival_window:Q", title="Count"))
+            )
+            st.altair_chart(arrival_chart, use_container_width=True)
         if "budget_preference" in survey_df.columns:
             budget_counts = survey_df["budget_preference"].value_counts(dropna=False)
-            st.bar_chart(budget_counts)
+            budget_chart = (
+                alt.Chart(budget_counts.reset_index())
+                .mark_arc()
+                .encode(theta=alt.Theta("budget_preference:Q", title="Count"), color=alt.Color("index:N", title="Budget"))
+            )
+            st.altair_chart(budget_chart, use_container_width=True)
         if "attendance_likelihood" in survey_df.columns:
             likelihood_counts = survey_df["attendance_likelihood"].value_counts(dropna=False).sort_index()
-            st.line_chart(likelihood_counts)
+            likelihood_chart = (
+                alt.Chart(likelihood_counts.reset_index())
+                .mark_line(point=True)
+                .encode(x=alt.X("index:Q", title="Likelihood"), y=alt.Y("attendance_likelihood:Q", title="Count"))
+            )
+            st.altair_chart(likelihood_chart, use_container_width=True)
         st.dataframe(survey_df, use_container_width=True)
         csv_survey = survey_df.to_csv(index=False).encode("utf-8")
         st.download_button("Download survey CSV", csv_survey, "survey.csv", "text/csv")
